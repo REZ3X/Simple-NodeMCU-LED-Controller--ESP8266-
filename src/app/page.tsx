@@ -1,101 +1,141 @@
-import Image from "next/image";
+"use client";
 
+import axios from "axios";
+import { useState, useEffect } from "react";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Power, Wifi, WifiOff } from 'lucide-react';
+
+/**
+ * Home component that controls an ESP8266 LED.
+ * 
+ * @component
+ * @returns {JSX.Element} The rendered component.
+ * 
+ * @example
+ * <Home />
+ * 
+ * @remarks
+ * This component allows the user to toggle the LED on and off, adjust its brightness, and check the connection status to the ESP8266.
+ * 
+ * @property {boolean} isOn - State to track if the LED is on or off.
+ * @property {number} brightness - State to track the brightness level of the LED.
+ * @property {boolean} isConnected - State to track if the connection to the ESP8266 is established.
+ * @property {string} espIP - The IP address of the ESP8266.
+ * 
+ * @function checkConnection - Checks the connection status to the ESP8266.
+ * @async
+ * @returns {Promise<void>}
+ * 
+ * @function handleToggle - Toggles the LED on or off.
+ * @async
+ * @returns {Promise<void>}
+ * 
+ * @function handleBrightnessChange - Changes the brightness of the LED.
+ * @param {number[]} value - The new brightness value.
+ * @async
+ * @returns {Promise<void>}
+ * 
+ * @function useEffect - Sets up an interval to check the connection status every 5 seconds.
+ * @returns {void}
+ * 
+ * @returns {JSX.Element} The rendered component.
+ */
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [isOn, setIsOn] = useState(false);
+  const [brightness, setBrightness] = useState(50);
+  const [isConnected, setIsConnected] = useState(false);
+  const espIP = "http://10.201.1.252"; // Replace with your ESP8266 IP address
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const checkConnection = async () => {
+    try {
+      const response = await axios.get(`${espIP}/status`);
+      if (response.status === 200) {
+        setIsConnected(true);
+      }
+    } catch {
+      setIsConnected(false);
+    }
+  };
+
+  const handleToggle = async () => {
+    const command = isOn ? "off" : "on";
+    try {
+      await axios.get(`${espIP}/led/${command}`);
+      setIsOn(!isOn);
+    } catch (error) {
+      console.error("Error controlling LED:", error);
+    }
+  };
+
+  const handleBrightnessChange = async (value: number[]) => {
+    setBrightness(value[0]);
+    try {
+      await axios.get(`${espIP}/led/brightness`, { params: { value: value[0] } });
+    } catch (error) {
+      console.error("Error setting brightness:", error);
+    }
+  };
+
+  useEffect(() => {
+    const interval = setInterval(checkConnection, 5000); // Check connection every 5 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <Card className="w-full max-w-md bg-gray-800 text-white">
+        <CardHeader className="border-b border-gray-700">
+          <CardTitle className="text-2xl font-bold text-center">ESP8266 LED Controller</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6 pt-6">
+          <div className="flex items-center justify-between">
+            <span className="text-lg">Power</span>
+            <Switch
+              checked={isOn}
+              onCheckedChange={handleToggle}
+              className="data-[state=checked]:bg-green-500"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+          <div className="space-y-2">
+            <span className="text-lg">Brightness</span>
+            <Slider
+              value={[brightness]}
+              onValueChange={handleBrightnessChange}
+              max={100}
+              step={1}
+              className="w-full"
+            />
+            <div className="text-right text-sm text-gray-400">{brightness}%</div>
+          </div>
+          <div className="pt-4">
+            <div
+              className="w-24 h-24 mx-auto rounded-full border-4 border-gray-700"
+              style={{
+                backgroundColor: isOn ? `hsl(0, 0%, ${brightness}%)` : 'transparent',
+                boxShadow: isOn ? `0 0 20px hsl(0, 0%, ${brightness}%)` : 'none'
+              }}
+            />
+          </div>
+          <Button
+            variant="outline"
+            className={`w-full ${isConnected ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+            onClick={checkConnection}
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            {isConnected ? (
+              <>
+                <Wifi className="mr-2 h-4 w-4" /> Connected
+              </>
+            ) : (
+              <>
+                <WifiOff className="mr-2 h-4 w-4" /> Disconnected
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
