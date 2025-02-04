@@ -1,3 +1,50 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Add this CSS to your styles */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px; /* Width of the switch */
+    height: 34px; /* Height of the switch */
+  }
+  
+  .switch input {
+    opacity: 0; /* Hide the default checkbox */
+    width: 0;
+    height: 0;
+  }
+  
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc; /* Background color when off */
+    transition: .4s; /* Smooth transition */
+    border-radius: 34px; /* Rounded corners */
+  }
+  
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 26px; /* Height of the toggle knob */
+    width: 26px; /* Width of the toggle knob */
+    left: 4px; /* Position of the knob */
+    bottom: 4px; /* Position of the knob */
+    background-color: white; /* Color of the knob */
+    transition: .4s; /* Smooth transition */
+    border-radius: 50%; /* Round knob */
+  }
+  
+  /* When the switch is checked */
+  input:checked + .slider {
+    background-color: #2196F3; /* Background color when on */
+  }
+  
+  input:checked + .slider:before {
+    transform: translateX(26px); /* Move the knob to the right */
+  }
